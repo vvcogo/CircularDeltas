@@ -142,4 +142,4 @@ if __name__ == "__main__":
         main(sys.argv[1:])
     else:
         print('Usage: python3 sra_script.py <input_CSV> <output_dir>')
-        return
+        sys.exit(1)
