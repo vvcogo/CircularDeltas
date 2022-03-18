@@ -20,48 +20,49 @@ def create_pattern_ion_torrent(row):
         model_result = "Ion Torrent" + " " + model_second_word
 
     return model_result
-
 #put every model from each platform in the same pattern
-def create_pattern_models(file,changes_models_dict,platform_model_dict):
+def create_pattern_models(file,changes_models_dict,platform_model_dict,files_dict):
     aux = []
     for row in file.itertuples(index = False):
         platform = getattr(row,"Platform")
         model = getattr(row,"Model")
         run = getattr(row,"Run")
         spots = getattr(row,"spots")
+        avgLength = getattr(row,"avgLength")
+        size_MB = getattr(row,"size_MB")
         whitespace = model.find(' ')
         model_before_whitespace = model[:whitespace]
         if platform == "ION_TORRENT":
             model_result = create_pattern_ion_torrent(row).strip()
-            aux.append([platform,model_result,run])
+            aux.append([platform,model_result,run,avgLength,size_MB])
 
-            #if model_result not in changes_models_dict:
-            #    changes_models_dict[model_result] = model
             if model_result not in changes_models_dict:
-                changes_models_dict[model_result] = [model]
-            changes_models_dict[model_result].append([run,spots])
+                changes_models_dict[model_result] = model
+            if model_result not in files_dict:
+                files_dict[model_result] = []
+            files_dict[model_result].append([run,spots,avgLength,size_MB])
 
         if platform in platform_model_dict and model_before_whitespace in platform_model_dict.values():
             model_result = model.strip()
-            aux.append([platform,model_result,run])
+            aux.append([platform,model_result,run,avgLength,size_MB])
 
-            #if model_result not in changes_models_dict:
-            #    changes_models_dict[model_result] = model
             if model_result not in changes_models_dict:
-                changes_models_dict[model_result] = []
-            changes_models_dict[model_result].append([run,spots])
+                changes_models_dict[model_result] = model
+            if model_result not in files_dict:
+                files_dict[model_result] = []
+            files_dict[model_result].append([run,spots,avgLength,size_MB])
 
         elif platform in platform_model_dict:
             model_result =(platform_model_dict[platform] + " " + model).strip()
-            aux.append([platform,model_result,run])
+            aux.append([platform,model_result,run,avgLength,size_MB])
 
-            #if model_result not in changes_models_dict:
-            #    changes_models_dict[model_result] = model
             if model_result not in changes_models_dict:
-                changes_models_dict[model_result] = []
-            changes_models_dict[model_result].append([run,spots])
+                changes_models_dict[model_result] = model
+            if model_result not in files_dict:
+                files_dict[model_result] = []
+            files_dict[model_result].append([run,spots,avgLength,size_MB])
 
-    df_aux = pd.DataFrame(aux,columns = ['Platform','Model','Run'])
+    df_aux = pd.DataFrame(aux,columns = ['Platform','Model','Run','avgLength','size_MB'])
     return df_aux
 
 #create a directory for each platform
@@ -78,7 +79,7 @@ def delete_dir(primary_path):
                 except OSError as e:
                     print("Error deleting: %s"%primary_path)
 
-def create_files(primary_path,names_dict,changes_models_dict):
+def create_files(primary_path,names_dict,changes_models_dict,files_dict):
 
     #import the csv files
     count_df = pd.read_csv(os.path.join(primary_path,'SraRunInfoCount.csv'))
@@ -99,8 +100,8 @@ def create_files(primary_path,names_dict,changes_models_dict):
             f.write('%s:%s\n' % (key, value))
 
     #goes through the changes_models_dict to create a file for each model creating a csv file
-    for key,value in changes_models_dict.items():
-        df = pd.DataFrame(value,columns = ['Run','spots'])
+    for key,value in files_dict.items():
+        df = pd.DataFrame(value,columns = ['Run','spots','avgLength','size_MB'])
         df.to_csv('%s.csv' %names_dict[key],index = False)
 
 
@@ -118,23 +119,23 @@ def main(args):
     #the models after the changes as the keys and before the changes as the values
     changes_models_dict = {}
     #the models alredy changed and with no repeated as keys and the list with the run and spots as the values
-    changes_models_dict = defaultdict(list)
+    files_dict = defaultdict(list)
     #the models alredy changed as the keys and the names of the files( the path with the directory also) as the values
     names_dict = {}
 
     #the input CSV file is the one passed as argv[0]
     df = pd.read_csv (args[0])
     #getting the platform,model,run and spots
-    filtered_df = df.iloc[:,[0,3,18,19]]
+    filtered_df = df.iloc[:,[0,3,18,19,6,7]]
     #excluding the  rows names that apear in the middle of the file
     final_filtered_df = filtered_df[(filtered_df["Platform"] != "Platform")]
     final_filtered_df.to_csv(os.path.join(primary_path,'SraRunInfoReturn.csv'), index=False)
 
     #make a csv file with the count of every model without the repeated ones
-    final_count = create_pattern_models(filtered_df,changes_models_dict,platform_model_dict).groupby(['Platform','Model']).count()
+    final_count = create_pattern_models(filtered_df,changes_models_dict,platform_model_dict,files_dict).groupby(['Platform','Model']).count()
     final_count.to_csv(os.path.join(primary_path,'SraRunInfoCount.csv'))
 
-    create_files(primary_path,names_dict,changes_models_dict)
+    create_files(primary_path,names_dict,changes_models_dict,files_dict)
 
 
 if __name__ == "__main__":
