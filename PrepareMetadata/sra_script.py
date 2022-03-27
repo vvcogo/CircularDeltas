@@ -3,7 +3,7 @@ from collections import defaultdict
 import os
 import shutil
 import sys
-
+import subprocess
 #put every model from the Ion Torrent platform in the same pattern
 def create_pattern_ion_torrent(row):
     model =getattr(row,"Model")
@@ -105,6 +105,28 @@ def create_files(primary_path,names_dict,changes_models_dict,files_dict):
         df.to_csv('%s.csv' %names_dict[key],index = False)
 
 
+def get_porcentage_spots(primary_path):
+    for platform_dir in os.listdir(primary_path):
+        if platform_dir != "changes_models_dict.txt" and platform_dir != "SraRunInfoCount.csv" and platform_dir != "SraRunInfoReturn.csv":
+            platform_path = os.path.join(primary_path,platform_dir)
+            for model_file in os.listdir(platform_path):
+                model_path = os.path.join(platform_path,model_file)
+                df = pd.read_csv(model_path)
+                df_spotsAvg = pd.DataFrame(data=None)
+                df_spotsAvg['spots_avgLength'] = df['spots'] * df['avgLength']
+                total_spotsAvg = df_spotsAvg['spots_avgLength'].sum()
+                percentage=[]
+                for row in df.itertuples(index = False):
+                    spots = getattr(row,"spots")
+                    avgLength = getattr(row,"avgLength")
+                    percentage_spots = (spots * avgLength * 100)/total_spotsAvg
+                    percentage.append(percentage_spots)
+
+                df['percentage_spots'] = percentage
+                df.to_csv('%s' %model_path,index=False)
+
+
+
 def main(args):
     #creating the main directory
     #the output is placed in the directory passed as argv[1]
@@ -136,6 +158,8 @@ def main(args):
     final_count.to_csv(os.path.join(primary_path,'SraRunInfoCount.csv'))
 
     create_files(primary_path,names_dict,changes_models_dict,files_dict)
+    get_porcentage_spots(primary_path)
+
 
 
 if __name__ == "__main__":
