@@ -119,6 +119,10 @@ def get_porcentage_spots(primary_path):
                 for row in df.itertuples(index = False):
                     spots = getattr(row,"spots")
                     avgLength = getattr(row,"avgLength")
+                    if spots == 0:
+                        spots = 1
+                    if avgLength == 0:
+                        avgLength = 1
                     percentage_spots = (spots * avgLength * 100)/total_spotsAvg
                     percentage.append(percentage_spots)
 
