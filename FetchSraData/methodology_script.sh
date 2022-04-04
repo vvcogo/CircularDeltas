@@ -10,7 +10,6 @@ INPUT_FILENAME=`basename $INPUT`
 FILE_SIZE=$2
 #FILE_SIZE=`declare -i $INPUT_SIZE`
 
-
 mkdir -p -- "results_fastq_$INPUT_FILENAME"
 mkdir -p -- "errors_fastq_$INPUT_FILENAME"
 D=`date +%s`
@@ -38,4 +37,4 @@ do
 
 done
 
-awk 'NR%4 == 3 || NR%4 == 0 {print}' results_fastq_$INPUT_FILENAME/$INPUT_FILENAME-${D}.fastq >> results_fastq_$INPUT_FILENAME/$INPUT_FILENAME-${D}_reduced.txt
+awk 'NR%4 == 3 || NR%4 == 0 {print}' results_fastq_$INPUT_FILENAME/$INPUT_FILENAME-${D}.fastq >>results_fastq_$INPUT_FILENAME/$INPUT_FILENAME-${D}_reduced.txt
